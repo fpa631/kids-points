@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>⭐ 小孩集點系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #FFF8F0; --card: #FFFFFF; --text: #2D2D2D;
+    --muted: #999; --radius: 20px; --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 3rem; }
+
+  /* Login */
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+  .login-box { background: white; border-radius: 28px; padding: 2rem 1.75rem; box-shadow: var(--shadow); width: 100%; max-width: 360px; text-align: center; }
+  .login-box .icon { font-size: 48px; margin-bottom: 0.5rem; }
+  .login-box h1 { font-size: 1.4rem; font-weight: 900; margin-bottom: 0.25rem; }
+  .login-box p { font-size: 13px; color: var(--muted); margin-bottom: 1.5rem; }
+  .parent-btns { display: flex; gap: 10px; margin-bottom: 1.25rem; }
+  .parent-btn {
+    flex: 1; padding: 14px 8px; border-radius: 16px; border: 2.5px solid #eee;
+    background: #fafafa; font-family: 'Nunito', sans-serif; font-size: 15px;
+    font-weight: 800; cursor: pointer; transition: all 0.15s; color: var(--text);
+  }
+  .parent-btn .emoji { font-size: 26px; display: block; margin-bottom: 4px; }
+  .parent-btn.dad-sel { border-color: #0984e3; background: #D6F0FF; color: #0984e3; }
+  .parent-btn.mom-sel { border-color: #d63031; background: #FFE0E0; color: #d63031; }
+  .pw-row { margin-bottom: 1rem; }
+  .pw-row input {
+    width: 100%; padding: 12px 16px; border: 2px solid #eee; border-radius: 14px;
+    font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 700;
+    text-align: center; letter-spacing: 3px;
+  }
+  .pw-row input:focus { outline: none; border-color: #74B9FF; }
+  .login-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 16px;
+    font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 900;
+    cursor: pointer; background: #2D2D2D; color: white; margin-bottom: 10px;
+    transition: transform 0.1s;
+  }
+  .login-btn:active { transform: scale(0.97); }
+  .faceid-btn {
+    width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 16px;
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; background: white; color: var(--muted);
+    transition: all 0.15s; display: none;
+  }
+  .faceid-btn.show { display: block; }
+  .faceid-btn:hover { border-color: #74B9FF; color: #0984e3; }
+  .login-err { font-size: 12px; color: #d63031; margin-top: 8px; min-height: 18px; font-weight: 700; }
+
+  /* App */
+  #app-screen { display: none; }
+  header {
+    background: white; padding: 1rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 1.15rem; font-weight: 900; }
+  .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .sync-row { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #2ECC71; transition: background 0.3s; }
+  .dot.syncing { background: #F39C12; animation: pulse 1s infinite; }
+  .dot.error { background: #E74C3C; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .user-badge { font-size: 12px; font-weight: 800; padding: 4px 12px; border-radius: 50px; }
+  .logout-btn {
+    font-size: 11px; color: var(--muted); background: none;
+    border: 1.5px solid #eee; border-radius: 50px; padding: 3px 10px;
+    cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 700;
+  }
+
+  .setup-banner {
+    background: #FFF3CD; border: 1.5px solid #FFEAA7; border-radius: 12px;
+    padding: 1rem 1.25rem; margin: 1rem; font-size: 13px; line-height: 1.6; display: none;
+  }
+  .setup-banner.show { display: block; }
+  .setup-banner strong { color: #856404; }
+  .setup-banner input {
+    width: 100%; margin-top: 8px; padding: 8px 12px; border: 1.5px solid #FFEAA7;
+    border-radius: 8px; font-family: monospace; font-size: 12px; background: white;
+  }
+  .setup-banner button {
+    margin-top: 8px; padding: 7px 18px; background: #856404; color: white;
+    border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+
+  main { padding: 1rem; max-width: 600px; margin: 0 auto; }
+
+  .kids-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+  .kid-card {
+    background: white; border-radius: var(--radius); padding: 1rem 0.5rem;
+    text-align: center; box-shadow: var(--shadow); cursor: pointer;
+    border: 3px solid transparent; transition: transform 0.15s, border-color 0.15s;
+  }
+  .kid-card:active { transform: scale(0.97); }
+  .kid-card .avatar { width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; color: white; }
+  .kid-card .name { font-size: 15px; font-weight: 800; }
+  .kid-card .pts { font-size: 28px; font-weight: 900; margin: 4px 0 2px; line-height: 1; }
+  .kid-card .money { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+  .panel { background: white; border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); margin-bottom: 1rem; }
+  .panel h2 { font-size: 15px; font-weight: 800; margin-bottom: 1rem; display: flex; align-items: center; gap: 6px; }
+
+  .kid-selector { display: flex; gap: 7px; margin-bottom: 12px; flex-wrap: wrap; }
+  .kid-pill { padding: 6px 16px; border-radius: 50px; font-size: 13px; font-weight: 700; cursor: pointer; border: 2px solid #eee; background: #f8f8f8; color: var(--muted); transition: all 0.15s; font-family: 'Nunito', sans-serif; }
+  .kid-pill.active { color: white; border-color: transparent; }
+
+  .form-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+  label { font-size: 12px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 4px; }
+  input[type=number] { width: 72px; padding: 10px; border: 2px solid #eee; border-radius: 12px; font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 800; text-align: center; }
+  input[type=number]:focus { outline: none; border-color: #74B9FF; }
+  textarea { flex: 1; padding: 10px 12px; border: 2px solid #eee; border-radius: 12px; font-family: 'Nunito', sans-serif; font-size: 13px; resize: vertical; min-height: 62px; }
+  textarea:focus { outline: none; border-color: #74B9FF; }
+
+  .btn-row { display: flex; gap: 8px; }
+  .btn { flex: 1; padding: 12px; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.1s, opacity 0.15s; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-plus { background: #D6F0FF; color: #0984e3; }
+  .btn-minus { background: #FFE0E0; color: #d63031; }
+
+  /* Redeem modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal {
+    background: white; border-radius: 24px; padding: 1.75rem;
+    width: 100%; max-width: 340px; box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    transform: translateY(20px); transition: transform 0.2s;
+  }
+  .modal-overlay.show .modal { transform: translateY(0); }
+  .modal h3 { font-size: 17px; font-weight: 900; margin-bottom: 0.25rem; }
+  .modal .sub { font-size: 13px; color: var(--muted); margin-bottom: 1.25rem; }
+  .redeem-kid-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .redeem-kid-btn { flex:1; padding: 10px 4px; border-radius: 14px; border: 2px solid #eee; background: #fafafa; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; text-align: center; transition: all 0.15s; color: var(--text); }
+  .redeem-kid-btn.active { color: white; border-color: transparent; }
+  .redeem-pts-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .redeem-pts-row input { flex:1; padding: 10px; border: 2px solid #eee; border-radius: 12px; font-family: 'Nunito', sans-serif; font-size: 18px; font-weight: 900; text-align: center; }
+  .redeem-pts-row input:focus { outline: none; border-color: #F39C12; }
+  .redeem-preview { font-size: 13px; color: var(--muted); margin-bottom: 1.25rem; font-weight: 700; text-align: center; }
+  .redeem-preview span { color: #F39C12; font-size: 18px; }
+  .modal-btns { display: flex; gap: 8px; }
+  .btn-redeem-confirm { flex:1; padding: 12px; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 900; cursor: pointer; background: #FFF3CD; color: #856404; transition: transform 0.1s; }
+  .btn-redeem-confirm:active { transform: scale(0.97); }
+  .btn-redeem-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-cancel { padding: 12px 18px; border: 2px solid #eee; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; background: white; color: var(--muted); }
+  .btn-redeem-open { background: #FFF3CD; color: #856404; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tab-btn { padding: 5px 14px; border-radius: 50px; font-size: 12px; font-weight: 700; cursor: pointer; border: 2px solid #eee; background: transparent; color: var(--muted); font-family: 'Nunito', sans-serif; transition: all 0.15s; }
+  .tab-btn.active { background: var(--text); color: white; border-color: var(--text); }
+
+  .log-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #f0f0f0; gap: 8px; }
+  .log-item:last-child { border-bottom: none; }
+  .log-note { font-size: 13px; font-weight: 700; }
+  .log-meta { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+  .log-tag { font-size: 10px; font-weight: 800; padding: 1px 7px; border-radius: 50px; color: white; }
+  .op-tag { font-size: 10px; font-weight: 800; padding: 1px 7px; border-radius: 50px; }
+  .log-pts { font-size: 18px; font-weight: 900; white-space: nowrap; }
+  .log-pts.pos { color: #0984e3; }
+  .log-pts.neg { color: #d63031; }
+  .empty { text-align: center; color: var(--muted); font-size: 13px; padding: 2rem 0; }
+  .loading { text-align: center; color: var(--muted); font-size: 13px; padding: 2rem 0; }
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #eee; border-top-color: #74B9FF; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 400px) { .kids-grid { gap: 7px; } .kid-card .pts { font-size: 22px; } }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="icon">⭐</div>
+    <h1>小孩集點系統</h1>
+    <p>請選擇身分並輸入密碼</p>
+    <div class="parent-btns">
+      <button class="parent-btn" id="btn-dad" onclick="selectParent('dad')">
+        <span class="emoji">👨</span>爸爸
+      </button>
+      <button class="parent-btn" id="btn-mom" onclick="selectParent('mom')">
+        <span class="emoji">👩</span>媽媽
+      </button>
+    </div>
+    <div class="pw-row">
+      <input type="password" id="pw-input" placeholder="生日4碼" maxlength="20"
+        onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="login-btn" onclick="doLogin()">登入</button>
+    <button class="faceid-btn" id="faceid-btn" onclick="doFaceID()">🔒 Face ID / Touch ID 快速登入</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app-screen">
+  <header>
+    <h1>⭐ 小孩集點系統</h1>
+    <div class="header-right">
+      <div class="sync-row">
+        <div class="dot" id="dot"></div>
+        <span id="sync-txt">已同步</span>
+      </div>
+      <span class="user-badge" id="user-badge"></span>
+      <button class="logout-btn" onclick="doLogout()">登出</button>
+    </div>
+  </header>
+
+  <div class="setup-banner" id="setup-banner">
+    <strong>⚙️ 首次設定：請填入你的 Google Apps Script 網址</strong><br>
+    請依照說明文件建立 Apps Script，然後把網址貼到下方：
+    <input type="text" id="script-url-input" placeholder="https://script.google.com/macros/s/AKfycb.../exec" />
+    <br><button onclick="saveScriptUrl()">儲存並連線</button>
+  </div>
+
+  <main>
+    <div class="kids-grid" id="kids-grid"></div>
+    <div class="panel">
+      <h2>✏️ 加減點數</h2>
+      <div class="kid-selector" id="kid-selector"></div>
+      <div class="form-row">
+        <div>
+          <label>點數</label>
+          <input type="number" id="pts-input" min="1" value="1" />
+        </div>
+        <div style="flex:1">
+          <label>備注（原因）</label>
+          <textarea id="note-input" placeholder="例如：主動幫忙做家事、完成功課、亂發脾氣..."></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-plus" id="btn-add" onclick="submitPts(1)">＋ 加點</button>
+        <button class="btn btn-minus" id="btn-sub" onclick="submitPts(-1)">－ 減點</button>
+        <button class="btn btn-redeem-open" onclick="openRedeem()">🎁 兌換</button>
+      </div>
+    </div>
+
+    <!-- Redeem Modal -->
+    <div class="modal-overlay" id="redeem-overlay" onclick="if(event.target===this)closeRedeem()">
+      <div class="modal">
+        <h3>🎁 點數兌換</h3>
+        <div class="sub">1 點 = 10 元，請選擇小孩和兌換點數</div>
+        <div class="redeem-kid-row" id="redeem-kid-row"></div>
+        <div class="redeem-pts-row">
+          <input type="number" id="redeem-pts" min="1" value="1" oninput="updateRedeemPreview()" />
+        </div>
+        <div class="redeem-preview" id="redeem-preview">兌換 <span>10</span> 元</div>
+        <div class="modal-btns">
+          <button class="btn-cancel" onclick="closeRedeem()">取消</button>
+          <button class="btn-redeem-confirm" id="btn-redeem-confirm" onclick="confirmRedeem()">確認兌換</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>📋 紀錄</h2>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="setTab('all')">全部</button>
+        <button class="tab-btn" onclick="setTab('希希')">希希</button>
+        <button class="tab-btn" onclick="setTab('將將')">將將</button>
+        <button class="tab-btn" onclick="setTab('辣辣')">辣辣</button>
+      </div>
+      <div id="log-area"><div class="loading"><span class="spinner"></span>載入中...</div></div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const KIDS = [
+  { name: '希希', color: '#74B9FF', ptColor: '#0984e3' },
+  { name: '將將', color: '#55EFC4', ptColor: '#00b894' },
+  { name: '辣辣', color: '#FF8FAB', ptColor: '#d63031' },
+];
+// ★ 修改這裡設定你自己的密碼 ★
+const PASSWORDS = { dad: '0326', mom: '0817' }; // 爸爸生日 / 媽媽生日
+const PARENT_LABEL = { dad: '👨 爸爸', mom: '👩 媽媽' };
+const PARENT_STYLE = {
+  dad: { bg: '#D6F0FF', color: '#0984e3' },
+  mom: { bg: '#FFE0E0', color: '#d63031' },
+};
+
+// ── State ─────────────────────────────────────────────────────
+let app = {
+  points: { '希希': 0, '將將': 0, '辣辣': 0 },
+  log: [], selected: '希希', tab: 'all', loading: true,
+  scriptUrl: '', currentUser: null,
+};
+let selectedParent = null;
+let syncTimer = null;
+
+// ── Login ─────────────────────────────────────────────────────
+function selectParent(p) {
+  selectedParent = p;
+  document.getElementById('btn-dad').className = 'parent-btn' + (p==='dad'?' dad-sel':'');
+  document.getElementById('btn-mom').className = 'parent-btn' + (p==='mom'?' mom-sel':'');
+  document.getElementById('pw-input').focus();
+  updateFaceIDBtn();
+}
+
+function doLogin() {
+  const err = document.getElementById('login-err');
+  if (!selectedParent) { err.textContent = '請先選擇爸爸或媽媽'; return; }
+  const pw = document.getElementById('pw-input').value;
+  if (pw !== PASSWORDS[selectedParent]) { err.textContent = '密碼錯誤，請再試一次'; return; }
+  err.textContent = '';
+  enterApp(selectedParent);
+  setTimeout(() => offerFaceID(selectedParent), 800);
+}
+
+function doLogout() {
+  app.currentUser = null;
+  clearInterval(syncTimer);
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+  document.getElementById('login-err').textContent = '';
+}
+
+function enterApp(who) {
+  app.currentUser = who;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  const s = PARENT_STYLE[who];
+  const badge = document.getElementById('user-badge');
+  badge.textContent = PARENT_LABEL[who];
+  badge.style.background = s.bg;
+  badge.style.color = s.color;
+  app.scriptUrl = localStorage.getItem('kids_script_url') || '';
+  if (!app.scriptUrl) {
+    document.getElementById('setup-banner').classList.add('show');
+    app.loading = false;
+    renderAll();
+  } else {
+    loadData();
+    clearInterval(syncTimer);
+    syncTimer = setInterval(loadData, 30000);
+  }
+}
+
+// ── Face ID / WebAuthn ────────────────────────────────────────
+const isWebAuthnAvailable = () => !!window.PublicKeyCredential && location.protocol === 'https:';
+
+function updateFaceIDBtn() {
+  const btn = document.getElementById('faceid-btn');
+  const hasKey = selectedParent && localStorage.getItem('kids_cred_' + selectedParent);
+  btn.className = 'faceid-btn' + (isWebAuthnAvailable() && hasKey ? ' show' : '');
+}
+
+function b64(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+function unb64(s) {
+  return Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')), c => c.charCodeAt(0)).buffer;
+}
+
+async function offerFaceID(who) {
+  if (!isWebAuthnAvailable()) return;
+  if (localStorage.getItem('kids_cred_' + who)) return;
+  if (!confirm('要設定 Face ID / Touch ID 下次快速登入嗎？')) return;
+  try {
+    const cred = await navigator.credentials.create({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rp: { name: '小孩集點系統', id: location.hostname },
+      user: { id: new TextEncoder().encode(who), name: who, displayName: PARENT_LABEL[who] },
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+      timeout: 60000,
+    }});
+    localStorage.setItem('kids_cred_' + who, b64(cred.rawId));
+    alert('設定成功！下次登入可直接使用 Face ID。');
+    updateFaceIDBtn();
+  } catch(e) {}
+}
+
+async function doFaceID() {
+  const err = document.getElementById('login-err');
+  if (!selectedParent) { err.textContent = '請先選擇爸爸或媽媽'; return; }
+  const credId = localStorage.getItem('kids_cred_' + selectedParent);
+  if (!credId) { err.textContent = '尚未設定 Face ID，請先用密碼登入'; return; }
+  try {
+    await navigator.credentials.get({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rpId: location.hostname,
+      allowCredentials: [{ type: 'public-key', id: unb64(credId) }],
+      userVerification: 'required',
+      timeout: 60000,
+    }});
+    err.textContent = '';
+    enterApp(selectedParent);
+  } catch(e) {
+    err.textContent = 'Face ID 驗證失敗，請改用密碼登入';
+  }
+}
+
+// ── Script URL ────────────────────────────────────────────────
+function saveScriptUrl() {
+  const url = document.getElementById('script-url-input').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    alert('網址格式不對，請確認是 https://script.google.com/macros/s/.../exec 的格式');
+    return;
+  }
+  localStorage.setItem('kids_script_url', url);
+  app.scriptUrl = url;
+  document.getElementById('setup-banner').classList.remove('show');
+  loadData();
+  clearInterval(syncTimer);
+  syncTimer = setInterval(loadData, 30000);
+}
+
+// ── API ───────────────────────────────────────────────────────
+async function api(params) {
+  if (!app.scriptUrl) return null;
+  setSyncStatus('syncing');
+  try {
+    const res = await fetch(`${app.scriptUrl}?${new URLSearchParams(params)}`);
+    const data = await res.json();
+    setSyncStatus('saved');
+    return data;
+  } catch(e) {
+    setSyncStatus('error');
+    return null;
+  }
+}
+
+async function loadData() {
+  setSyncStatus('syncing');
+  const data = await api({ action: 'getAll' });
+  if (data) {
+    app.points = data.points || { '希希': 0, '將將': 0, '辣辣': 0 };
+    app.log = data.log || [];
+  }
+  app.loading = false;
+  renderAll();
+}
+
+async function submitPts(sign) {
+  const pts = Math.max(1, parseInt(document.getElementById('pts-input').value)||1) * sign;
+  const note = document.getElementById('note-input').value.trim() || (pts>0?'加點':'減點');
+  const operator = app.currentUser;
+  document.getElementById('btn-add').disabled = true;
+  document.getElementById('btn-sub').disabled = true;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('zh-TW') + ' ' + now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  app.points[app.selected] = (app.points[app.selected]||0) + pts;
+  app.log.unshift({ kid: app.selected, pts, note, date: dateStr, operator });
+  document.getElementById('note-input').value = '';
+  document.getElementById('pts-input').value = '1';
+  renderAll();
+  await api({ action: 'addEntry', kid: app.selected, pts, note, date: dateStr, operator });
+  document.getElementById('btn-add').disabled = false;
+  document.getElementById('btn-sub').disabled = false;
+}
+
+// ── Redeem ────────────────────────────────────────────────────
+let redeemKid = null;
+
+function openRedeem() {
+  redeemKid = app.selected;
+  renderRedeemKids();
+  document.getElementById('redeem-pts').value = '1';
+  updateRedeemPreview();
+  document.getElementById('redeem-overlay').classList.add('show');
+}
+
+function closeRedeem() {
+  document.getElementById('redeem-overlay').classList.remove('show');
+}
+
+function renderRedeemKids() {
+  const row = document.getElementById('redeem-kid-row');
+  row.innerHTML = KIDS.map(k =>
+    `<button class="redeem-kid-btn ${redeemKid===k.name?'active':''}"
+      style="${redeemKid===k.name?`background:${k.color};border-color:${k.color}`:''}"
+      onclick="selectRedeemKid('${k.name}')">${k.name}<br><small style="font-weight:700;opacity:0.8">${app.points[k.name]||0}點</small></button>`
+  ).join('');
+}
+
+function selectRedeemKid(name) {
+  redeemKid = name;
+  renderRedeemKids();
+  updateRedeemPreview();
+}
+
+function updateRedeemPreview() {
+  const pts = Math.max(1, parseInt(document.getElementById('redeem-pts').value)||1);
+  const money = pts * 10;
+  document.getElementById('redeem-preview').innerHTML = `兌換 <span>${money}</span> 元`;
+  const avail = app.points[redeemKid] || 0;
+  document.getElementById('btn-redeem-confirm').disabled = pts > avail;
+  if (pts > avail) {
+    document.getElementById('redeem-preview').innerHTML = `⚠️ 點數不足（現有 ${avail} 點）`;
+  }
+}
+
+async function confirmRedeem() {
+  const pts = Math.max(1, parseInt(document.getElementById('redeem-pts').value)||1);
+  const avail = app.points[redeemKid] || 0;
+  if (pts > avail) return;
+  const money = pts * 10;
+  closeRedeem();
+  const note = `兌換 ${money} 元`;
+  const operator = app.currentUser;
+  document.getElementById('btn-add').disabled = true;
+  document.getElementById('btn-sub').disabled = true;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('zh-TW') + ' ' + now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  app.points[redeemKid] = avail - pts;
+  app.log.unshift({ kid: redeemKid, pts: -pts, note, date: dateStr, operator, isRedeem: true });
+  renderAll();
+  await api({ action: 'addEntry', kid: redeemKid, pts: -pts, note, date: dateStr, operator });
+  document.getElementById('btn-add').disabled = false;
+  document.getElementById('btn-sub').disabled = false;
+}
+function renderAll() { renderKids(); renderSelector(); renderLog(); }
+
+function renderKids() {
+  const g = document.getElementById('kids-grid'); if(!g) return;
+  g.innerHTML = KIDS.map(k => {
+    const pts = app.points[k.name]||0;
+    const sel = app.selected===k.name;
+    return `<div class="kid-card" style="border-color:${sel?k.color:'transparent'}" onclick="selectKid('${k.name}')">
+      <div class="avatar" style="background:${k.color}">${k.name[0]}</div>
+      <div class="name">${k.name}</div>
+      <div class="pts" style="color:${k.ptColor}">${pts}</div>
+      <div class="money">= ${pts*10} 元</div>
+    </div>`;
+  }).join('');
+}
+
+function renderSelector() {
+  const r = document.getElementById('kid-selector'); if(!r) return;
+  r.innerHTML = KIDS.map(k =>
+    `<button class="kid-pill ${app.selected===k.name?'active':''}"
+      style="${app.selected===k.name?`background:${k.color};border-color:${k.color}`:'background:#f8f8f8'}"
+      onclick="selectKid('${k.name}')">${k.name}</button>`
+  ).join('');
+}
+
+function renderLog() {
+  const area = document.getElementById('log-area'); if(!area) return;
+  if (app.loading) { area.innerHTML = '<div class="loading"><span class="spinner"></span>載入中...</div>'; return; }
+  const list = app.tab==='all' ? app.log : app.log.filter(l=>l.kid===app.tab);
+  if (!list.length) { area.innerHTML = '<div class="empty">還沒有紀錄</div>'; return; }
+  area.innerHTML = list.slice(0,60).map(l => {
+    const k = KIDS.find(k=>k.name===l.kid);
+    const pos = l.pts>0;
+    const opStyle = l.operator==='dad'
+      ? 'background:#D6F0FF;color:#0984e3'
+      : l.operator==='mom'
+      ? 'background:#FFE0E0;color:#d63031'
+      : 'background:#f0f0f0;color:#999';
+    const opLabel = l.operator==='dad'?'👨 爸爸':l.operator==='mom'?'👩 媽媽':'';
+    const isRedeem = l.note && l.note.startsWith('兌換');
+    return `<div class="log-item">
+      <div>
+        <div class="log-note">${isRedeem?'🎁 ':''} ${l.note}</div>
+        <div class="log-meta">
+          ${app.tab==='all'?`<span class="log-tag" style="background:${k?k.color:'#ccc'}">${l.kid}</span>`:''}
+          ${isRedeem?`<span class="op-tag" style="background:#FFF3CD;color:#856404">兌換</span>`:''}
+          ${opLabel?`<span class="op-tag" style="${opStyle}">${opLabel}</span>`:''}
+          <span>${l.date||''}</span>
+        </div>
+      </div>
+      <div class="log-pts ${pos?'pos':'neg'}">${pos?'+':''}${l.pts}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectKid(n) { app.selected=n; renderKids(); renderSelector(); }
+function setTab(t) {
+  app.tab=t;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===(t==='all'?'全部':t)));
+  renderLog();
+}
+function setSyncStatus(s) {
+  const dot=document.getElementById('dot'), txt=document.getElementById('sync-txt');
+  if(!dot) return;
+  dot.className='dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
+  txt.textContent=s==='syncing'?'同步中...':s==='error'?'同步失敗':'已同步';
+}
+</script>
+</body>
+</html>
